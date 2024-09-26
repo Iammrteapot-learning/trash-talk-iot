@@ -98,7 +98,7 @@ def main():
             distance = ultrasonic_read()
             trash_state.update_state(trash_state.get_light_level(), distance)
 
-            time.sleep(1)
+            time.sleep(2)
         except Exception as e:
             print(e)
             time.sleep(5)
