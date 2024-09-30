@@ -1,6 +1,16 @@
 import subprocess
 import time
 from gpiozero import LightSensor, DistanceSensor
+import requests
+
+def post_data_to_api(url, data):
+    try:
+        response = requests.post(url, json=data)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.json()  # Return the response in JSON format
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return None
 
 class TrashState:
     def __init__(self):
@@ -11,7 +21,9 @@ class TrashState:
         self.start_time = None
         self.light_level = 0
         self.distance = 0
+        
         self.magic_number = 95
+        self.url = "http://localhost:3000/api/trash"
 
     def set_light_level(self, level):
         self.light_level = level
@@ -34,6 +46,8 @@ class TrashState:
     def update_state(self, light_level, distance):
         self.set_light_level(light_level)
         self.set_distance(distance)
+        data = self.get_data()
+        post_data_to_api(self.url, data)
 
         if (self.light_state == "closed"):
             self.start_time = None
@@ -53,7 +67,6 @@ class TrashState:
                 # 5 seconds passed
                 if (time.time() - self.start_time > 5):
                     self.light_state = "forgot"
-                    
 
         if (self.light_state == "forgot"):
             self.shout()
