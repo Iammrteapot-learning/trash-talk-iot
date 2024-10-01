@@ -20,13 +20,17 @@ class TrashState:
 
         self.start_time = None
         self.light_level = 0
+        self.talk = 0
         self.distance = 0
         
         self.magic_number = 95
-        self.url = "http://localhost:3000/api/trash"
+        self.url = "http://localhost:3000/data"
 
     def set_light_level(self, level):
         self.light_level = level
+
+    def set_talk(self, talk):
+        self.talk = talk
     
     def set_distance(self, distance):
         self.distance = distance
@@ -34,12 +38,15 @@ class TrashState:
     def get_light_level(self):
         return self.light_level
     
+    def get_talk(self):
+        return self.talk
+    
     def get_distance(self):
         return self.distance
     
     def get_data(self):
         return {
-            "light_level": self.get_light_level(),
+            "talk": self.get_talk(),
             "distance": self.get_distance()
         }
     
@@ -48,6 +55,7 @@ class TrashState:
         self.set_distance(distance)
         data = self.get_data()
         post_data_to_api(self.url, data)
+        self.talk = 0
 
         if (self.light_state == "closed"):
             self.start_time = None
@@ -70,7 +78,8 @@ class TrashState:
 
         if (self.light_state == "forgot"):
             self.shout()
-            self.light_state = "closed"            
+            self.light_state = "closed"
+            self.talk = 1
         
 
     def shout(self):
