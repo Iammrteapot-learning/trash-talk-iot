@@ -5,9 +5,17 @@ import requests
 
 def post_data_to_api(url, data):
     try:
+        print("Posting data to the API")
         response = requests.post(url, json=data)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        return response.json()  # Return the response in JSON format
+        print(response)
+        print("repsonse content is ", response.content)
+        
+        if response.content:  # Check if the response content is not empty
+            return response.json()  # Return the response in JSON format
+        else:
+            print("Empty response received from the server.")
+            return None
     except requests.exceptions.RequestException as e:
         print(f"An error occurred: {e}")
         return None
@@ -23,8 +31,8 @@ class TrashState:
         self.talk = 0
         self.distance = 0
         
-        self.magic_number = 95
-        self.url = "http://localhost:3000/data"
+        self.magic_number = 50
+        self.url = "http://192.168.176.83:3000/data"
 
     def set_light_level(self, level):
         self.light_level = level

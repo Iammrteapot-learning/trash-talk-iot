@@ -20,6 +20,7 @@ export default function Chart({
   input: ChartDataInput[];
 }) {
   const [chartData, setChartData] = useState<ChartData>();
+  console.log("From chart", chartData);
   const titleText = type === "SPACE" ? "Used Trash Space" : "Talking Frequency";
   const subTitleText = type === "SPACE" ? "0.5 Litre of Trash" : "40 Time/Hr";
   const lineColor = type === "SPACE" ? "#30FF98" : "#FFB330";
@@ -123,7 +124,7 @@ export default function Chart({
           },
         },
         yaxis: {
-          max: 100,
+          max: type === "SPACE" ? 100 : 3,
           labels: {
             style: {
               colors: "#637381",
@@ -136,11 +137,11 @@ export default function Chart({
       series: [
         {
           name: seriesName,
-          data: data.map((item) => item?.value),
+          data: data.map((item) => item.value),
         },
       ],
     });
-  }, []);
+  }, [chartData]);
 
   return (
     <div>

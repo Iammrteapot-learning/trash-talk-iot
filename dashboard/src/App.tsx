@@ -41,19 +41,6 @@ function App() {
   // };
 
   /**/
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/data");
-        const data = await res.json();
-        setData(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const initialData: Data = {
     percentage: 0,
@@ -63,6 +50,24 @@ function App() {
     space: [],
   };
   const [data, setData] = useState<Data>(initialData);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/data");
+        const data = await res.json();
+        console.log(data);
+        setData(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchData();
+
+    const intervalId = setInterval(fetchData, 3000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <>

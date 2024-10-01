@@ -5,12 +5,15 @@ import { InfluxDB, Point } from "@influxdata/influxdb-client";
 import { config } from "dotenv";
 import { getEnvVar } from "./utils/getEnvVar";
 import { computeTenAverage } from "./utils/movingAverage";
-import { findLastCleanTime } from "./utils/findLastCleanTime";
+import {
+  convertLastUpdatedTime,
+  findLastCleanTime,
+} from "./utils/findLastCleanTime";
 import { convertDateTime } from "./utils/ChartDateConverter";
 
 config();
 
-const binHeight = 23; // cm
+const binHeight = 22; // cm
 // const threshold = 0.8
 
 interface sensor {
@@ -105,12 +108,16 @@ const app = new Elysia()
         },
         complete() {
           console.log("Query completed");
-          console.log(result);
-          console.log(distances);
           const talkingRates = computeTenAverage(temp);
           const lastCleanTime = findLastCleanTime(distances);
-          const lastUpdateTime = talkingRates[talkingRates.length - 1].datetime;
-          const percentage = distances[distances.length - 1].value;
+          const lastUpdateTime =
+            talkingRates.length === 0
+              ? "> 10"
+              : convertLastUpdatedTime(
+                  talkingRates[talkingRates.length - 1].datetime
+                );
+          const percentage =
+            distances.length === 0 ? 0 : distances[distances.length - 1].value;
           res({
             percentage,
             lastCleanTime,
@@ -134,7 +141,7 @@ const app = new Elysia()
 
     const point = new Point("sensorData")
       .tag("location", "bin1")
-      .floatField("distance", percentage)
+      .floatField("distance", percentage < 0 ? 50 : percentage.toFixed(2))
       .floatField("talk", req.body.talk);
 
     writeApi.writePoint(point);
@@ -151,6 +158,7 @@ const app = new Elysia()
     //   return false
     // }
     // return req.body
+    return { statusCode: 201, body: "Data written" };
   })
   .listen(3000);
 
