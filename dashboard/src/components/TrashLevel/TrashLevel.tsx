@@ -34,7 +34,9 @@ export default function TrashLevel({ percentage }: { percentage: number }) {
             }}
           />
         </div>{" "}
-        <div className="absolute z-3 text-white text-5xl">{percentage} %</div>
+        <div className="absolute z-3 text-white text-5xl">
+          {percentage.toFixed(2)} %
+        </div>
         {/* <div className="absolute z-1 bg-tsht-purple"></div> */}
       </div>
     </div>

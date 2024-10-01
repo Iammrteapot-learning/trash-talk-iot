@@ -1,6 +1,24 @@
 import subprocess
 import time
 from gpiozero import LightSensor, DistanceSensor
+import requests
+
+def post_data_to_api(url, data):
+    try:
+        print("Posting data to the API")
+        response = requests.post(url, json=data)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        print(response)
+        print("repsonse content is ", response.content)
+        
+        if response.content:  # Check if the response content is not empty
+            return response.json()  # Return the response in JSON format
+        else:
+            print("Empty response received from the server.")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return None
 
 class TrashState:
     def __init__(self):
@@ -10,11 +28,17 @@ class TrashState:
 
         self.start_time = None
         self.light_level = 0
+        self.talk = 0
         self.distance = 0
-        self.magic_number = 95
+        
+        self.magic_number = 50
+        self.url = "http://192.168.176.83:3000/data"
 
     def set_light_level(self, level):
         self.light_level = level
+
+    def set_talk(self, talk):
+        self.talk = talk
     
     def set_distance(self, distance):
         self.distance = distance
@@ -22,18 +46,24 @@ class TrashState:
     def get_light_level(self):
         return self.light_level
     
+    def get_talk(self):
+        return self.talk
+    
     def get_distance(self):
         return self.distance
     
     def get_data(self):
         return {
-            "light_level": self.get_light_level(),
-            "distance": self.get_distance()
+            "talk": self.get_talk(),
+            "distance": int(self.get_distance())
         }
     
     def update_state(self, light_level, distance):
         self.set_light_level(light_level)
         self.set_distance(distance)
+        data = self.get_data()
+        post_data_to_api(self.url, data)
+        self.talk = 0
 
         if (self.light_state == "closed"):
             self.start_time = None
@@ -53,11 +83,11 @@ class TrashState:
                 # 5 seconds passed
                 if (time.time() - self.start_time > 5):
                     self.light_state = "forgot"
-                    
 
         if (self.light_state == "forgot"):
             self.shout()
-            self.light_state = "closed"            
+            self.light_state = "closed"
+            self.talk = 1
         
 
     def shout(self):

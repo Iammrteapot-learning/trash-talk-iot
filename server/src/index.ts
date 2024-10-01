@@ -4,15 +4,21 @@ import { swagger } from "@elysiajs/swagger";
 import { InfluxDB, Point } from "@influxdata/influxdb-client";
 import { config } from "dotenv";
 import { getEnvVar } from "./utils/getEnvVar";
+import { computeTenAverage } from "./utils/movingAverage";
+import {
+  convertLastUpdatedTime,
+  findLastCleanTime,
+} from "./utils/findLastCleanTime";
+import { convertDateTime } from "./utils/ChartDateConverter";
 
 config();
 
-// const binHeight = 100
+const binHeight = 22; // cm
 // const threshold = 0.8
 
 interface sensor {
-  ldr: number;
-  uv: number;
+  talk: number;
+  distance: number;
 }
 
 const url = getEnvVar("INFLUX_URL");
@@ -20,7 +26,7 @@ const token = getEnvVar("INFLUX_TOKEN");
 const org = getEnvVar("INFLUX_ORG");
 const bucket = getEnvVar("INFLUX_BUCKET");
 
-const influxDB = new InfluxDB({ url, token })
+const influxDB = new InfluxDB({ url, token });
 
 const app = new Elysia()
   .use(
@@ -39,14 +45,16 @@ const app = new Elysia()
     const queryApi = influxDB.getQueryApi(org);
 
     const query = `from(bucket: "${bucket}")
-      |> range(start: -24h)
+      |> range(start: -10m)
       |> filter(fn: (r) => r._measurement == "sensorData")
     `;
 
     return new Promise((res, rej) => {
-
       const result = new Map<string, sensor>();
-  
+      const distances: { datetime: string; value: number }[] = [];
+      // let talkingRates: { datetime: string; value: number }[] = [];
+      let temp: { datetime: string; value: number }[] = [];
+
       queryApi.queryRows(query, {
         next(row, tableMeta) {
           const o = tableMeta.toObject(row);
@@ -55,67 +63,102 @@ const app = new Elysia()
           if (result.get(o._time)) {
             let current = result.get(o._time);
             switch (o._field) {
-              case 'ldr':
+              case "talk":
                 if (current) {
-                  current.ldr = o._value
-                  result.set(o._time, current)
+                  current.talk = o._value;
+                  // result.set(o._time, current);
+                  temp.push({
+                    datetime: convertDateTime(o._time),
+                    value: o._value,
+                  });
                 }
-                break
-              case 'uv':
+                break;
+              case "distance":
                 if (current) {
-                  current.uv = o._value
-                  result.set(o._time, current)
+                  current.distance = o._value;
+                  result.set(o._time, current);
+                  distances.push({
+                    datetime: convertDateTime(o._time),
+                    value: o._value,
+                  });
                 }
-                break
+                break;
             }
           } else {
             switch (o._field) {
-              case 'ldr':
-                result.set(o._time, {ldr: o._value, uv: -1})
-                break
-              case 'uv':
-                result.set(o._time, {ldr: -1, uv: o._value})     
-                break       
+              case "talk":
+                // result.set(o._time, { talk: o._value, distance: -1 });
+                temp.push({
+                  datetime: convertDateTime(o._time),
+                  value: o._value,
+                });
+                break;
+              case "distance":
+                // result.set(o._time, { talk: -1, distance: o._value });
+                distances.push({
+                  datetime: convertDateTime(o._time),
+                  value: o._value,
+                });
+                break;
             }
           }
         },
         error(error) {
-          rej(error)
+          rej(error);
         },
         complete() {
-          console.log('Query completed')
-          console.log(result)
-          res(Array.from(result.entries()))
-        }
-      })  
-    })
+          console.log("Query completed");
+          const talkingRates = computeTenAverage(temp);
+          const lastCleanTime = findLastCleanTime(distances);
+          const lastUpdateTime =
+            talkingRates.length === 0
+              ? "> 10"
+              : convertLastUpdatedTime(
+                  talkingRates[talkingRates.length - 1].datetime
+                );
+          const percentage =
+            distances.length === 0 ? 0 : distances[distances.length - 1].value;
+          res({
+            percentage,
+            lastCleanTime,
+            lastUpdateTime,
+            rate: talkingRates,
+            space: distances,
+          });
+        },
+      });
+    });
   })
   .post("/data", (req) => {
     // const data: sensor = req.body;
     const writeApi = influxDB.getWriteApi(org, bucket);
-    
-    if (!req.body.uv || !req.body.ldr) {
-      throw new Error('Fields missing')
-    }
 
-    const point = new Point('sensorData')
-      .tag('location', 'bin1')
-      .floatField('uv', req.body.uv)
-      .floatField('ldr', req.body.ldr);
+    // if (!req.body.distance || !req.body.talk) {
+    //   throw new Error("Fields missing");
+    // }
+
+    const percentage = 100 - (req.body.distance / binHeight) * 100;
+
+    const point = new Point("sensorData")
+      .tag("location", "bin1")
+      .floatField("distance", percentage < 0 ? 50 : percentage.toFixed(2))
+      .floatField("talk", req.body.talk);
 
     writeApi.writePoint(point);
 
-    writeApi.close()
+    writeApi
+      .close()
       .then(() => {
-        return point
+        return point;
       })
       .catch((err) => {
-        throw new Error(err)
-      })
-    // if (req.body.uv && req.body.uv < binHeight * threshold) {
+        throw new Error(err);
+      });
+    // if (req.body.distance && req.body.distance < binHeight * threshold) {
     //   return false
     // }
     // return req.body
+    return { statusCode: 201, body: "Data written" };
   })
   .listen(3000);
 
@@ -136,5 +179,5 @@ console.log(
   `
   Try this:
   
-  \x1b]8;;http://${app.server?.hostname}:${app.server?.port}/swagger/\x1b\\${app.server?.hostname}:${app.server?.port}/swagger\x1b]8;;\x1b\\`
+  \x1b]8;;http://${app.server?.hostname}:${app.server?.port}/swagger\x1b\\${app.server?.hostname}:${app.server?.port}/swagger\x1b]8;;\x1b\\`
 );
