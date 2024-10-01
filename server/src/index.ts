@@ -4,6 +4,8 @@ import { swagger } from "@elysiajs/swagger";
 import { InfluxDB, Point } from "@influxdata/influxdb-client";
 import { config } from "dotenv";
 import { getEnvVar } from "./utils/getEnvVar";
+import { computeTenAverage } from "./utils/movingAverage";
+import { findLastCleanTime } from "./utils/findLastCleanTime";
 
 config();
 
@@ -45,11 +47,9 @@ const app = new Elysia()
 
     return new Promise((res, rej) => {
       const result = new Map<string, sensor>();
-      const distances: { datetime: string; value: string }[] = [];
-      const talkingRates: { datetime: string; value: string }[] = [];
-      let lastCleanTime;
-      let lastUpdateTime;
-      let percentage;
+      const distances: { datetime: string; value: number }[] = [];
+      // let talkingRates: { datetime: string; value: number }[] = [];
+      let temp: { datetime: string; value: number }[] = [];
 
       queryApi.queryRows(query, {
         next(row, tableMeta) {
@@ -62,7 +62,8 @@ const app = new Elysia()
               case "talk":
                 if (current) {
                   current.talk = o._value;
-                  result.set(o._time, current);
+                  // result.set(o._time, current);
+                  temp.push({ datetime: o._time, value: o._value });
                 }
                 break;
               case "distance":
@@ -76,10 +77,11 @@ const app = new Elysia()
           } else {
             switch (o._field) {
               case "talk":
-                result.set(o._time, { talk: o._value, distance: -1 });
+                // result.set(o._time, { talk: o._value, distance: -1 });
+                temp.push({ datetime: o._time, value: o._value });
                 break;
               case "distance":
-                result.set(o._time, { talk: -1, distance: o._value });
+                // result.set(o._time, { talk: -1, distance: o._value });
                 distances.push({ datetime: o._time, value: o._value });
                 break;
             }
@@ -92,7 +94,17 @@ const app = new Elysia()
           console.log("Query completed");
           console.log(result);
           console.log(distances);
-          res(Array.from(result.entries()));
+          const talkingRates = computeTenAverage(temp);
+          const lastCleanTime = findLastCleanTime(distances);
+          const lastUpdateTime = talkingRates[talkingRates.length - 1].datetime;
+          const percentage = distances[distances.length - 1].value;
+          res({
+            percentage,
+            lastCleanTime,
+            lastUpdateTime,
+            rate: talkingRates,
+            space: distances,
+          });
         },
       });
     });

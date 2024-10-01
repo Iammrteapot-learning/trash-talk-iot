@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { DashBoard } from "./components/Dashboard/Dashboard";
 import TrashLevel from "./components/TrashLevel/TrashLevel";
@@ -6,43 +6,62 @@ import { Data } from "./components/Dashboard/Dashboard";
 
 function App() {
   /* mock data */
-  const mockSpaceChart = [
-    { datetime: "2024-09-19 14:32:04", value: 70 },
-    { datetime: "2024-09-19 14:37:04", value: 98 },
-    { datetime: "2024-09-19 14:42:04", value: 26 },
-    { datetime: "2024-09-19 14:47:04", value: 20 },
-    { datetime: "2024-09-19 14:52:04", value: 91 },
-    { datetime: "2024-09-19 14:57:04", value: 50 },
-    { datetime: "2024-09-19 15:02:04", value: 89 },
-    { datetime: "2024-09-19 15:07:04", value: 22 },
-    { datetime: "2024-09-19 15:12:04", value: 54 },
-    { datetime: "2024-09-19 15:17:04", value: 73 },
-  ];
+  // const mockSpaceChart = [
+  //   { datetime: "2024-09-19 14:32:04", value: 70 },
+  //   { datetime: "2024-09-19 14:37:04", value: 98 },
+  //   { datetime: "2024-09-19 14:42:04", value: 26 },
+  //   { datetime: "2024-09-19 14:47:04", value: 20 },
+  //   { datetime: "2024-09-19 14:52:04", value: 91 },
+  //   { datetime: "2024-09-19 14:57:04", value: 50 },
+  //   { datetime: "2024-09-19 15:02:04", value: 89 },
+  //   { datetime: "2024-09-19 15:07:04", value: 22 },
+  //   { datetime: "2024-09-19 15:12:04", value: 54 },
+  //   { datetime: "2024-09-19 15:17:04", value: 73 },
+  // ];
 
-  const mockRateChart = [
-    { datetime: "2024-09-19 14:32:04", value: 70 },
-    { datetime: "2024-09-19 14:37:04", value: 98 },
-    { datetime: "2024-09-19 14:42:04", value: 26 },
-    { datetime: "2024-09-19 14:47:04", value: 20 },
-    { datetime: "2024-09-19 14:52:04", value: 91 },
-    { datetime: "2024-09-19 14:57:04", value: 50 },
-    { datetime: "2024-09-19 15:02:04", value: 89 },
-    { datetime: "2024-09-19 15:07:04", value: 22 },
-    { datetime: "2024-09-19 15:12:04", value: 54 },
-    { datetime: "2024-09-19 15:17:04", value: 73 },
-  ];
+  // const mockRateChart = [
+  //   { datetime: "2024-09-19 14:32:04", value: 70 },
+  //   { datetime: "2024-09-19 14:37:04", value: 98 },
+  //   { datetime: "2024-09-19 14:42:04", value: 26 },
+  //   { datetime: "2024-09-19 14:47:04", value: 20 },
+  //   { datetime: "2024-09-19 14:52:04", value: 91 },
+  //   { datetime: "2024-09-19 14:57:04", value: 50 },
+  //   { datetime: "2024-09-19 15:02:04", value: 89 },
+  //   { datetime: "2024-09-19 15:07:04", value: 22 },
+  //   { datetime: "2024-09-19 15:12:04", value: 54 },
+  //   { datetime: "2024-09-19 15:17:04", value: 73 },
+  // ];
 
-  const mockData = {
-    percentage: 80,
-    lastUpdateTime: 0,
-    lastCleanTime: 0,
-    rate: mockRateChart,
-    space: mockSpaceChart,
-  };
+  // const mockData = {
+  //   percentage: 80,
+  //   lastUpdateTime: 0,
+  //   lastCleanTime: 0,
+  //   rate: mockRateChart,
+  //   space: mockSpaceChart,
+  // };
 
   /**/
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/data");
+        const data = await res.json();
+        setData(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  const [data, setData] = useState<Data>(mockData);
+    fetchData();
+  });
+  const initialData: Data = {
+    percentage: 0,
+    lastCleanTime: 0,
+    lastUpdateTime: 0,
+    rate: [],
+    space: [],
+  };
+  const [data, setData] = useState<Data>(initialData);
 
   return (
     <>

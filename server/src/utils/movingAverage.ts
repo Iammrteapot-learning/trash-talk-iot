@@ -1,13 +1,17 @@
-export function movingAverage(data: { datetime: string; value: string }[]) {
+export function computeTenAverage(data: { datetime: string; value: number }[]) {
   const result = [];
-  for (let i = 0; i < data.length; i++) {
+  const sectionSize = data.length / 10;
+
+  for (let i = 0; i < sectionSize; i++) {
     let sum = 0;
-    for (let j = i - 5; j <= i + 5; j++) {
-      if (j >= 0 && j < data.length) {
-        sum += parseFloat(data[j].value);
-      }
+    for (let j = 0; j < sectionSize; j++) {
+      sum += data[i + j].value;
     }
-    result.push({ datetime: data[i].datetime, value: sum / 11 });
+    result.push({
+      datetime: data[i * sectionSize].datetime,
+      value: sum / sectionSize,
+    });
   }
+
   return result;
 }
