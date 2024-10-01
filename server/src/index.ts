@@ -6,6 +6,7 @@ import { config } from "dotenv";
 import { getEnvVar } from "./utils/getEnvVar";
 import { computeTenAverage } from "./utils/movingAverage";
 import { findLastCleanTime } from "./utils/findLastCleanTime";
+import { convertDateTime } from "./utils/ChartDateConverter";
 
 config();
 
@@ -63,14 +64,20 @@ const app = new Elysia()
                 if (current) {
                   current.talk = o._value;
                   // result.set(o._time, current);
-                  temp.push({ datetime: o._time, value: o._value });
+                  temp.push({
+                    datetime: convertDateTime(o._time),
+                    value: o._value,
+                  });
                 }
                 break;
               case "distance":
                 if (current) {
                   current.distance = o._value;
                   result.set(o._time, current);
-                  distances.push({ datetime: o._time, value: o._value });
+                  distances.push({
+                    datetime: convertDateTime(o._time),
+                    value: o._value,
+                  });
                 }
                 break;
             }
@@ -78,11 +85,17 @@ const app = new Elysia()
             switch (o._field) {
               case "talk":
                 // result.set(o._time, { talk: o._value, distance: -1 });
-                temp.push({ datetime: o._time, value: o._value });
+                temp.push({
+                  datetime: convertDateTime(o._time),
+                  value: o._value,
+                });
                 break;
               case "distance":
                 // result.set(o._time, { talk: -1, distance: o._value });
-                distances.push({ datetime: o._time, value: o._value });
+                distances.push({
+                  datetime: convertDateTime(o._time),
+                  value: o._value,
+                });
                 break;
             }
           }

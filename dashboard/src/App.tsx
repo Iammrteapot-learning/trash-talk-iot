@@ -53,7 +53,8 @@ function App() {
     };
 
     fetchData();
-  });
+  }, []);
+
   const initialData: Data = {
     percentage: 0,
     lastCleanTime: 0,
