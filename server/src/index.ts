@@ -113,9 +113,9 @@ const app = new Elysia()
     // const data: sensor = req.body;
     const writeApi = influxDB.getWriteApi(org, bucket);
 
-    if (!req.body.distance || !req.body.talk) {
-      throw new Error("Fields missing");
-    }
+    // if (!req.body.distance || !req.body.talk) {
+    //   throw new Error("Fields missing");
+    // }
 
     const percentage = 100 - (req.body.distance / binHeight) * 100;
 

@@ -1,6 +1,6 @@
 export function computeTenAverage(data: { datetime: string; value: number }[]) {
   const result = [];
-  const sectionSize = data.length / 10;
+  const sectionSize = Math.floor(data.length / 10);
 
   for (let i = 0; i < sectionSize; i++) {
     let sum = 0;

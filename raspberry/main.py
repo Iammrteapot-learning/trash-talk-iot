@@ -47,7 +47,7 @@ class TrashState:
     def get_data(self):
         return {
             "talk": self.get_talk(),
-            "distance": self.get_distance()
+            "distance": int(self.get_distance())
         }
     
     def update_state(self, light_level, distance):
